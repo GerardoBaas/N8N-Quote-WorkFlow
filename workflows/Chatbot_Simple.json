@@ -1,0 +1,271 @@
+{
+  "name": "Chatbot Simple copy",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        0
+      ],
+      "id": "b50c5855-5896-4b09-baa9-43b6958ad527",
+      "name": "WhatsApp Trigger",
+      "webhookId": "b969a792-064e-4b3d-ae2e-0b9795709999",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "6I8dkEjHzN8SIURm",
+          "name": "AItom-Test WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Teléfono del cliente: {{ $json.phone_number }}\n\nMensaje recibido: {{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+        "options": {
+          "systemMessage": "=### 1. Rol y contexto\n\nEres **Aito**, asistente virtual de *TechByte Store* en WhatsApp. TechByte vende computadoras, componentes, periféricos y soluciones de TI.\n\n### 2. Objetivo\n\nGuiar a posibles clientes:\n1. Responder dudas técnicas o comerciales.\n2. Mostrar inventario disponible.\n3. Generar cotizaciones rápidas y precisas.\n\n### 3. Estilo de respuesta\n\n* Amable, cercano e informal.\n* **≤ 20 palabras** por mensaje; si se excede, resume y ofrece más detalle solo si lo piden.\n* Usa emojis ligeros 😊 solo para enfatizar (máx. 1 por mensaje).\n* Lista breve con viñetas si respondes varias opciones.\n* Sin tecnicismos extensos salvo petición explícita.\n\n### 4. Herramientas disponibles\n\n| Herramienta      | Propósito                                               | Llamado            | Parámetros requeridos                               |\n| ---------------- | ------------------------------------------------------- | ------------------ | --------------------------------------------------- |\n| `Inventory_Tool` | Obtener inventario actual (nombre, precio). | `Inventory_Tool()` | —                                                   |\n| `Quotation_Tool` | Crear cotización y enviarla al cliente.                 | `Quotation_Tool()` | `producto`, `cantidad`, `nombre_completo`, `correo` |\n\n### 5. Reglas de uso de herramientas\n\n1. **Inventario**\n   - Si el cliente pregunta por productos, disponibilidad o precios → llama inmediatamente `Inventory_Tool`.\n   - Filtra y muestra solo lo solicitado (máx. 5 ítems por mensaje).\n2. **Cotización**\n   - Para cotizar, solicita secuencialmente:\n   1\\) Producto deseado 🖥️\n   2\\) Cantidad\n   3\\) Nombre completo\n   4\\) Correo electrónico\n   - Confirma cada dato en ≤ 20 palabras.\n   - Al tenerlos todos, ejecuta `Quotation_Tool` con los parámetros en query.\n   - Puedes cotizar varios productos a la vez, solo manda en el mismo query la cantidad y el producto solicitado.\n   - Responde al cliente con un “¡Cotización en proceso” y ofrece ayuda adicional.\n\n### 6. Manejo de faltantes y errores\n\n* Stock 0: avisa “Agotado, ¿te interesa recibir aviso cuando llegue o ver alternativas?”\n* Datos incompletos: pregunta solo lo que falta.\n* Correo no válido: solicita uno nuevo (menciona formato correcto).\n* Error de herramienta: discúlpate brevemente y reinténtalo o explica solución manual.\n\n### 7. Buenas prácticas adicionales\n\n* No prometas descuentos ni tiempos de entrega exactos; deriva al equipo si lo piden.\n* Nunca compartas información interna ni códigos de las herramientas.\n* Respeta privacidad: usa los datos solo para la cotización solicitada.\n* Finaliza cada conversación ofreciendo ayuda extra: “¿Algo más en que te apoye?”\n\n---\n\n**Ejemplo breve:**\n\n> *Cliente*: “¿Tienen laptops gamer?”\n> *Aito*: “¡Claro! Dame un segundo…” → `Inventory_Tool()`\n> *Aito*: “Disponibles: ASUS ROG, MSI Katana, HP Omen. ¿Cuál te interesa y cuántas?”\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        220,
+        0
+      ],
+      "id": "726942e3-040c-4da3-b4f2-bd8c5ff2f440",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "function formatNumber(cadenaNumerica) {\n\n  const primerosDosDigitos = cadenaNumerica.substring(0, 2);\n\n  // Verificar si los primeros dos dígitos son '52'\n  if (primerosDosDigitos === '52') {\n  \n      const tercerDigito = cadenaNumerica.substring(2, 3);\n    \n      if (tercerDigito === '1') {\n        // Eliminar el tercer dígito y retornar el nuevo número\n        return cadenaNumerica.substring(0, 2) + cadenaNumerica.substring(3);\n      }\n    // Si el tercer dígito no es '1', retornar el número original\n    return cadenaNumerica;\n    \n  } else {\n    // Si los primeros dos dígitos no son '52', retornar el número original\n    return cadenaNumerica;\n  }\n}\n\nif($input.first().json.messages) {\n  const number = formatNumber($input.first().json.messages[0].from)\n  return [\n    {\n      \"phone_number\":  number\n    }\n  ]\n} else {\n  return []\n}\n\n"
+      },
+      "id": "76390f2c-0f1b-4350-8848-15a58ca9f076",
+      "name": "Format Phone Number",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        200,
+        240
+      ],
+      "id": "22f7f1f1-d6e2-4ddc-8357-eb79c7fc54ca",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        20,
+        240
+      ],
+      "id": "4555ff2c-8297-4f8e-b210-f6e79b90c67d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "lb0D3rZ6l9txnShl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "759901667196075",
+        "recipientPhoneNumber": "={{ $('Format Phone Number').item.json.phone_number }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        640,
+        0
+      ],
+      "id": "18eed4ff-e3b6-4f18-9202-6ca84898413a",
+      "name": "WhatsApp Business Cloud",
+      "webhookId": "97f95ccf-53e1-4b2e-817e-d43c485c32c5",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "hMVLlkJMiJYxFAPL",
+          "name": "AItom-Test WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Esta herramienta se llama Inventory_Tool. Usa esta herramienta para obtener el inventario completo de la tienda",
+        "url": "https://drive.google.com/uc?export=download&id=11arrXOKenzoB6PgWHJVGuWiNNJhff-EO"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        240
+      ],
+      "id": "a3ea6588-3f76-4519-8f22-1d1e2eef3f29",
+      "name": "Inventory_Tool"
+    },
+    {
+      "parameters": {
+        "name": "Quotation_Tool",
+        "description": "Call this tool when you have all the data collected from the client that want a quote. Always include (item_name, item_quantity,client name, and email).",
+        "workflowId": {
+          "__rl": true,
+          "value": "0oD5hbsqoBqDwtHX",
+          "mode": "list",
+          "cachedResultName": "Quotation_Tool copy"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Phone": "={{ $('Format Phone Number').item.json.phone_number }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        360,
+        240
+      ],
+      "id": "e42ff8df-0acc-417a-96dc-80395f2d4276",
+      "name": "Quotation_Tool"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Phone Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Phone Number": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inventory_Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quotation_Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1b23673d-3617-4e01-a0d0-8398d37c517e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fac7a55f022ebace3950854e2f1d059d674c88214cd45555c64fe530b6e19dcf"
+  },
+  "id": "wVMkkuv155u5yLWJ",
+  "tags": []
+}

@@ -1,0 +1,1141 @@
+{
+  "name": "Quotation_Tool copy",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"Phone\": \"a string\",\n  \"query\": \"a string\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -5280,
+        300
+      ],
+      "id": "1768dec5-1101-429a-9bd3-45d81d5d0878",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "76b11422-feca-4c55-bcc8-46f83e0d3470",
+              "name": "Telefono",
+              "value": "={{ $json.Phone }}",
+              "type": "string"
+            },
+            {
+              "id": "733fb547-c41a-4d70-b664-69734fcb2fc1",
+              "name": "Datos",
+              "value": "={{ $json.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5040,
+        300
+      ],
+      "id": "09196e69-1db2-4981-a7a2-53773bcd3810",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6dddfc38-f50e-4827-beb0-d6452d0541cf",
+              "leftValue": "={{ $item(\"0\").$node[\"Gmail Original\"].json[\"data\"][\"Estatus de la cotización, solo ponga aceptado si no va a realizar modificaciones\"] }}",
+              "rightValue": "Aprobado",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3440,
+        400
+      ],
+      "id": "a7fc61c3-877e-4139-b412-e48e72d756e4",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Información Inicial del cliente:Teléfono: {{ $json.Telefono }}\nNombre del cliente: {{ $json.Nombre }}\nCorreo del cliente: {{ $json.Correo }}\n\nArtículos solicitados:\n{{ $json.Items }}\n\nHora actual: {{ $now }}\n\nModificaciones:\n{{ JSON.stringify($json.modification, null, 2) }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres un asistente que modifica las cotizaciones con respecto a lo solicitado, siempre vas a recibir los datos originales y las modificaciones solicitadas. Tienes adjunto una herramienta para consultar los precios de productos.\n\nLos datos que no cambies se deben mantener en el mismo formato.\n\nTu respuesta va a ser un json en el formato indicado con los datos actualizados, los datos que no actualizaste se deben mantener igual en el formato.\n\nSiempre debes dar una respuesta al ultimo mensaje checando la hora en que te lo enviaron."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -2740,
+        540
+      ],
+      "id": "4b9262eb-cf4c-46ed-9fff-bb56849f3239",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "subject": "Cotizacion IA ",
+        "message": "=La nueva cotizacion es:\nTeléfono: {{ $json.output.Telefono }}\nNombre del cliente: {{ $json.output.Nombre }}\nCorreo del cliente: {{ $json.output.Correo }}\n\nArtículos solicitados:\n{{ $json.itemsPretty }}\n\n\nEnviado a las {{ $now }}",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Estatus de la cotización, solo ponga aceptado si no va a realizar modificaciones",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Aprobado"
+                  },
+                  {
+                    "option": "Denegado"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Escriba las modificaciones en caso de ser necesario:"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1900,
+        540
+      ],
+      "id": "f43d1984-d569-408b-8dde-ce23a1eaeea5",
+      "name": "Gmail Respuestas",
+      "webhookId": "c4209e91-c798-4300-8b04-b4416eeca88a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8i4D8lJGrZ0ulLfz",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "391ce2ab-cbe5-4900-a519-538a373731b2",
+              "leftValue": "={{ $item(\"0\").$node[\"Gmail Respuestas\"].json[\"data\"][\"Estatus de la cotización, solo ponga aceptado si no va a realizar modificaciones\"] }}",
+              "rightValue": "Aprobado",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1700,
+        540
+      ],
+      "id": "cd462ea5-f621-4f3b-83ff-d53d879d32c3",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8bc90864-0ef8-4ade-a77f-57081f61da50",
+              "name": "modification",
+              "value": "={{ $('Gmail Original').item.json.data['Escriba las modificaciones en caso de ser necesario:'] }}",
+              "type": "string"
+            },
+            {
+              "id": "0639babe-e159-4d78-a2d4-0db5270334b7",
+              "name": "Telefono",
+              "value": "={{ $('String Items').item.json.output.Telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "b0536b89-ad29-4c12-8721-f53a8f80adbf",
+              "name": "Nombre",
+              "value": "={{ $('String Items').item.json.output.Nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "c413b734-30d4-4f5d-9a74-84ae2c65bfa4",
+              "name": "Correo",
+              "value": "={{ $('String Items').item.json.output.Correo }}",
+              "type": "string"
+            },
+            {
+              "id": "3542f72a-8e39-4a2d-a48e-48af61b5d371",
+              "name": "Items",
+              "value": "={{ $('String Items').item.json.itemsPretty }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2980,
+        560
+      ],
+      "id": "b5ab8d49-dbeb-4f0c-8fad-dbfc04dc4516",
+      "name": "Inicializar modificacion"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a8668ae2-e839-40af-9c7b-137ec8d1b3e8",
+              "name": "modification",
+              "value": "={{ $item(\"0\").$node[\"Gmail Respuestas\"].json[\"data\"][\"Escriba las modificaciones en caso de ser necesario:\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "f883cf18-c20a-4329-b269-613cb27e3757",
+              "name": "Telefono",
+              "value": "={{ $('Organizar Items Mod').item.json.output.Telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "b97f4065-36dc-419a-ad1a-c2c2e8040b4b",
+              "name": "Nombre",
+              "value": "={{ $('Organizar Items Mod').item.json.output.Nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "41b1a828-69d5-4514-aa2a-0078da40b59d",
+              "name": "Correo",
+              "value": "={{ $('Organizar Items Mod').item.json.output.Correo }}",
+              "type": "string"
+            },
+            {
+              "id": "7895f05c-5494-4bcb-8dba-7904e6c1eac3",
+              "name": "Items",
+              "value": "={{ $('String Items Mod').item.json.itemsPretty }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1540,
+        860
+      ],
+      "id": "d08d1b2b-340c-4e71-a900-0e3c08222cf3",
+      "name": "Actualizar modificacion"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para obtener el Costo del producto",
+        "url": "https://drive.google.com/uc?export=download&id=11arrXOKenzoB6PgWHJVGuWiNNJhff-EO"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        -4520,
+        580
+      ],
+      "id": "141cc977-6b5b-465a-9521-7892045d623e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Telefono: {{ $item(\"0\").$node[\"Edit Fields\"].json[\"Telefono\"] }}\n\nDatos del cliente y el item que tienes que cotizar: {{ $item(\"0\").$node[\"Edit Fields\"].json[\"Datos\"] }}\n\n\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Siempre utiliza la herramienta que tienes adjunta para consultar los precios del producto y enviarlos en el apartado de items\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -4600,
+        300
+      ],
+      "id": "c071896b-d211-413f-b5ee-d1ccd667ada4",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Telefono\": \"String\",\n  \"Nombre\": \"String\",\n  \"Correo\": \"String\",\n  \"items\": [\n    {\n      \"item_name\": \"String\",\n      \"unit_price\": \"Number\",\n      \"unit\": \"Number\",\n      \"total\": \"Number\"\n    }\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -4340,
+        580
+      ],
+      "id": "9f5d9558-bc98-45fb-a143-9252856ff1dd",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Telefono\": \"String\",\n  \"Nombre\": \"String\",\n  \"Correo\": \"String\",\n  \"items\": [\n    {\n      \"item_name\": \"String\",\n      \"unit_price\": \"Number\",\n      \"unit\": \"Number\",\n      \"total\": \"Number\"\n    }\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -2340,
+        740
+      ],
+      "id": "68feb96e-3a5f-467b-a79c-a75f6d696e5b",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "resource": "pdf",
+        "pdfTemplateId": "f3d77b236395cda0",
+        "jsonParameters": true,
+        "download": true,
+        "propertiesJson": "={\n  \"company_name\": \"TechByte Store\",\n  \"company_slogan\": \"Lo mejor en informática\",\n  \"quotation\" : \"Cotización\",\n  \"sender_company_name\": \"TechByte Store\",\n  \"sender_street_adress\": \"71 Robert Cr.\",\n  \"sender_tate_adress\": \"Santa Cruz. CA 95OBO\",\n  \"sender_telephone\" : \"+33-1-23-45-67-89\",\n  \"receiver_company_name\": \"{{ $item(\"0\").$node[\"Resultados finales\"].json[\"Nombre\"] }}\",\n  \"receiver_street_adress\": \"\",\n  \"receiver_tate_adress\": \"\",\n  \"receiver_telephone\" : \"{{ $item(\"0\").$node[\"Resultados finales\"].json[\"Telefono\"] }}\",\n  \"date\" : \"{{ $now.format('yyyy-MM-dd') }}\",\n  \"quote_no\": \"{{ $item(\"0\").$node[\"Resultados finales\"].json[\"id_cot\"] }}\",\n  \"quote_exp\": \"{{ $now.plus({ months: 1 }).format('dd/MM/yyyy') }}\",\n  \"items\": {{ $item(\"0\").$node[\"Resultados finales\"].json[\"item\"] }},\n  \"terms1\" : \"El cliente será facturado después de indicar la aceptación de este presupuesto.\",\n  \"terms2\" : \"El pago deberá realizarse antes de la entrega del servicio y los bienes.\",\n  \"query_person\" : \"Us\",\n  \"query_tele\" : \"0-345-345-905\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.apiTemplateIo",
+      "typeVersion": 1,
+      "position": [
+        380,
+        180
+      ],
+      "id": "fba11c35-ac9a-40e2-a109-98c3724c3b8f",
+      "name": "APITemplate.io",
+      "credentials": {
+        "apiTemplateIoApi": {
+          "id": "vQ2t8iWm9zASRGXA",
+          "name": "APITemplate.io account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cc87d5f1-94b7-40a3-b5d5-8a153d3e26d5",
+              "name": "Telefono",
+              "value": "={{ $('AI Agent1').item.json.output.Telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "ce4e4905-5411-49aa-a1e3-31b7257a37ce",
+              "name": "Nombre",
+              "value": "={{ $('AI Agent1').item.json.output.Nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "ea72b2da-a80f-4914-b233-f2967c3f0159",
+              "name": "Correo",
+              "value": "={{ $('AI Agent1').item.json.output.Correo }}",
+              "type": "string"
+            },
+            {
+              "id": "68511890-0175-41ef-b8a1-56c845eeded5",
+              "name": "Item",
+              "value": "={{ $('Organizar Items').item.json.output.items }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2160,
+        220
+      ],
+      "id": "f0f9725c-9f54-42f9-a997-c323fc3b12bb",
+      "name": "Inicializar Resultados"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "subject": "Cotizacion IA ",
+        "message": "=Tenemos un potencial cliente, sus datos son:\nTeléfono: {{ $json.output.Telefono }}\nNombre del cliente: {{ $json.output.Nombre }}\nCorreo del cliente: {{ $json.output.Correo }}\n\nArtículos solicitados:\n{{ $json.itemsPretty }}\n\n",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Estatus de la cotización, solo ponga aceptado si no va a realizar modificaciones",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Aprobado"
+                  },
+                  {
+                    "option": "Denegado"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Escriba las modificaciones en caso de ser necesario:"
+            }
+          ]
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 5,
+              "resumeUnit": "days"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -3860,
+        300
+      ],
+      "id": "53a87adb-71b7-435f-81f7-300a06bd19a7",
+      "name": "Gmail Original",
+      "webhookId": "2d43db25-2af7-4a4d-a9f9-63ffd8c24ad8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8i4D8lJGrZ0ulLfz",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "accbf2a0-bbe8-417b-85b1-8100595abf7f",
+              "name": "id_cot",
+              "value": "={{ $item(\"0\").$node[\"Merge\"].json[\"id_cotizacion\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "2314196e-b987-4c83-ad26-da42a60e9c0f",
+              "name": "Telefono",
+              "value": "={{ $item(\"1\").$node[\"Merge\"].json[\"Telefono\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "4272cd31-7079-4384-b28d-833cf96774be",
+              "name": "=Nombre",
+              "value": "={{ $item(\"1\").$node[\"Merge\"].json[\"Nombre\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "351ab756-1c83-422a-9d58-7b6117353292",
+              "name": "Correo",
+              "value": "={{ $item(\"1\").$node[\"Merge\"].json[\"Correo\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "40aa06fc-a58e-4c31-98d3-192a77df1169",
+              "name": "item",
+              "value": "={{ $item(\"1\").$node[\"Merge\"].json[\"Item\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        60,
+        180
+      ],
+      "id": "92f205ed-eb95-4426-ab8b-01d9257d8c00",
+      "name": "Resultados finales",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -4700,
+        580
+      ],
+      "id": "6750f8fb-c1b1-4853-b464-cb95408a9dad",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "lb0D3rZ6l9txnShl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -180,
+        180
+      ],
+      "id": "0fb69335-2b51-46a1-8c80-b14a3c34b735",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "759901667196075",
+        "recipientPhoneNumber": "={{ $item(\"0\").$node[\"Resultados finales\"].json[\"Telefono\"] }}",
+        "messageType": "document",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        600,
+        180
+      ],
+      "id": "ee285099-8868-40d9-afda-d34fc12697bc",
+      "name": "WhatsApp Business Cloud",
+      "webhookId": "5c23376d-c0f3-4e97-93e8-c3879478c2df",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "hMVLlkJMiJYxFAPL",
+          "name": "AItom-Test WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Entrada de datos\n\n\n",
+        "height": 240,
+        "width": 440
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -5320,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "85710db3-c69a-44b9-9104-3bf5067f65e0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para obtener el Costo del producto",
+        "url": "https://drive.google.com/uc?export=download&id=11arrXOKenzoB6PgWHJVGuWiNNJhff-EO"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        -2540,
+        760
+      ],
+      "id": "cf7fba9e-388d-4bb4-af5a-b0cb0ce938e5",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2720,
+        780
+      ],
+      "id": "eaf51bf3-5d4c-4de8-bd8e-f3bc5d2b4e23",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "lb0D3rZ6l9txnShl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Estructuración de datos y aceptación humano\n\n\n\n\n",
+        "height": 520,
+        "width": 1100,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4780,
+        220
+      ],
+      "typeVersion": 1,
+      "id": "d3ed3c05-1fb7-463c-9ef3-6628d7f7a77e",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Generación ID\n\n\n\n\n\n",
+        "height": 220
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2240,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "31788944-778d-4f24-a68f-190a54b43c72",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cc87d5f1-94b7-40a3-b5d5-8a153d3e26d5",
+              "name": "Telefono",
+              "value": "={{ $('AI Agent').item.json.output.Telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "ce4e4905-5411-49aa-a1e3-31b7257a37ce",
+              "name": "Nombre",
+              "value": "={{ $('AI Agent').item.json.output.Nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "ea72b2da-a80f-4914-b233-f2967c3f0159",
+              "name": "Correo",
+              "value": "={{ $('AI Agent').item.json.output.Correo }}",
+              "type": "string"
+            },
+            {
+              "id": "60b5957f-9410-4341-a1f5-4dd894ff3ef3",
+              "name": "Item",
+              "value": "={{ $('Organizar Items Mod').item.json.output.items }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -660,
+        440
+      ],
+      "id": "f40505d1-627a-4b31-a9ca-ee628ecae3b1",
+      "name": "Inicializar Resultados Modificados"
+    },
+    {
+      "parameters": {
+        "content": "## Loop - Modificación de cotizaciones\n\n\n\n\n",
+        "height": 680,
+        "width": 1800,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3040,
+        460
+      ],
+      "typeVersion": 1,
+      "id": "73b2dc94-92e1-41c7-9db1-8049bc873eca",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Resultados sin modificar\n\n\n\n\n\n\n",
+        "height": 220,
+        "width": 360,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2280,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "6b6510b1-7ae9-497e-936d-72e1cb14bfd2",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Resultados modificados\n\n\n\n\n\n\n\n",
+        "height": 220,
+        "width": 360,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -780,
+        380
+      ],
+      "typeVersion": 1,
+      "id": "d6bbacb9-81bf-48cf-bfbe-19312b2cc13d",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Unión de datos finales\n\n\n\n\n\n\n\n\n\n",
+        "height": 240,
+        "width": 500,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -300,
+        120
+      ],
+      "typeVersion": 1,
+      "id": "e9488092-3b71-481e-a145-183080fda27d",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Creación y envío de pdf\n\n\n\n\n\n\n\n\n\n\n",
+        "height": 240,
+        "width": 500,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        300,
+        120
+      ],
+      "typeVersion": 1,
+      "id": "bf89ba72-8ed4-4a1c-92af-bdd289df2129",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "jsCode": "items.forEach(item => {\n  if (\n    item.json.output &&\n    Array.isArray(item.json.output.items)\n  ) {\n    item.json.output.items = item.json.output.items.map(obj => ({\n      ...obj,\n      unit_price: Number(obj.unit_price),\n      unit: Number(obj.unit),\n      total: Number(obj.total)\n    }));\n  }\n});\nreturn items;\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4260,
+        300
+      ],
+      "id": "2850547d-85f9-41df-a5e1-51134d3bc95a",
+      "name": "Organizar Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Esto formatea TODOS los elementos de output.items en cada \"item\" que llega al Function\nreturn items.map(item => {\n  // 1) Recuperamos el array real de tu JSON\n  const arr = item.json.output?.items || [];\n\n  // 2) Por cada objeto del array, montamos un bloque de texto\n  const bloques = arr.map(i => [\n    `– Artículo : ${i.item_name}`,\n    `  Precio   : ${i.unit_price}`,\n    `  Unidad   : ${i.unit ?? '—'}`,\n    `  Total    : ${i.total}`\n  ].join('\\n'));\n\n  // 3) Unimos todos los bloques con una línea en blanco\n  item.json.itemsPretty = bloques.join('\\n\\n');\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4080,
+        300
+      ],
+      "id": "ca24646b-0718-49e4-b65c-4b2d08036d5a",
+      "name": "String Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "items.forEach(item => {\n  if (\n    item.json.output &&\n    Array.isArray(item.json.output.items)\n  ) {\n    item.json.output.items = item.json.output.items.map(obj => ({\n      ...obj,\n      unit_price: Number(obj.unit_price),\n      unit: Number(obj.unit),\n      total: Number(obj.total)\n    }));\n  }\n});\nreturn items;\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2340,
+        540
+      ],
+      "id": "03c869df-8a8a-4ccb-b4c7-eaa8a0eb606d",
+      "name": "Organizar Items Mod"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Esto formatea TODOS los elementos de output.items en cada \"item\" que llega al Function\nreturn items.map(item => {\n  // 1) Recuperamos el array real de tu JSON\n  const arr = item.json.output?.items || [];\n\n  // 2) Por cada objeto del array, montamos un bloque de texto\n  const bloques = arr.map(i => [\n    `– Artículo : ${i.item_name}`,\n    `  Precio   : ${i.unit_price}`,\n    `  Unidad   : ${i.unit ?? '—'}`,\n    `  Total    : ${i.total}`\n  ].join('\\n'));\n\n  // 3) Unimos todos los bloques con una línea en blanco\n  item.json.itemsPretty = bloques.join('\\n\\n');\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2120,
+        540
+      ],
+      "id": "e211cba7-f12c-4724-acdd-13002be26959",
+      "name": "String Items Mod"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Teléfono → cadena limpia\nconst telefono = String($('AI Agent1').item.json.output.Telefono ?? '').trim();\n\n// 2) Teléfono en Base-64, pero “URL-safe” y sin relleno “=”\nconst base64 = Buffer.from(telefono)\n  .toString('base64')          // NTUxMjM0NTY3OA==\n  .replace(/\\+/g, '-')         // + → -\n  .replace(/\\//g, '_')         // / → _\n  .replace(/=+$/, '');         // quita los = finales\n\n// 3) Timestamp reducido a 4 dígitos (0000-9999)\nconst ts4 = (Date.now() % 10_000).toString().padStart(6, '0');\n\n// 4) Resultado\nreturn [{\n  json: {\n    id_cotizacion: `CL-${base64}-${ts4}`   // Ej.: CL-NDUxMjM0NTY3OA-4827\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2160,
+        -40
+      ],
+      "id": "e3b1ea82-8e2d-4584-9358-a9a64748f628",
+      "name": "Id_Gen"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Inicializar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Inicializar modificacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Organizar Items Mod",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Respuestas": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Inicializar Resultados Modificados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Actualizar modificacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicializar modificacion": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar modificacion": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Organizar Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "APITemplate.io": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicializar Resultados": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Gmail Original": {
+      "main": [
+        [
+          {
+            "node": "Id_Gen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resultados finales": {
+      "main": [
+        [
+          {
+            "node": "APITemplate.io",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Resultados finales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicializar Resultados Modificados": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Organizar Items": {
+      "main": [
+        [
+          {
+            "node": "String Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "String Items": {
+      "main": [
+        [
+          {
+            "node": "Gmail Original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organizar Items Mod": {
+      "main": [
+        [
+          {
+            "node": "String Items Mod",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "String Items Mod": {
+      "main": [
+        [
+          {
+            "node": "Gmail Respuestas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Id_Gen": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6196ca15-92d3-4dac-b41d-61716c88bd4c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fac7a55f022ebace3950854e2f1d059d674c88214cd45555c64fe530b6e19dcf"
+  },
+  "id": "0oD5hbsqoBqDwtHX",
+  "tags": []
+}

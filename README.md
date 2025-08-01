@@ -3,8 +3,8 @@
 Este repositorio contiene dos *workflows* listos para importar en [n8n](https://n8n.io/) que permiten automatizar tareas de atención al cliente y generación de cotizaciones, usando herramientas de IA, envío por WhatsApp, y formularios de respuesta por correo.
 
 > ⚠️ **Importante:** Este flujo está configurado con datos de ejemplo para una tienda ficticia llamada **TechByte Store**. Debes personalizarlo según tu negocio o caso de uso real antes de utilizarlo en producción.
->
-> ## 🎥 Demo del Proyecto
+
+## 🎥 Demo del Proyecto
 
 [![Demo en YouTube](https://img.youtube.com/vi/K5eNmJkDrEI/0.jpg)](https://youtu.be/K5eNmJkDrEI)
 
